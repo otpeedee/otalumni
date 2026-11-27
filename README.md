@@ -15,3 +15,15 @@ Set **Settings → Pages → Build and deployment → Source** to **GitHub Actio
 Add confirmed career information to `data/public-careers.json` with the matching roster name and class year, a role, company, field, and a public source such as an employer or university bio. Include a LinkedIn profile URL when you have confirmed the match. Run the build script to validate the entries and regenerate the browser data. The build also runs on GitHub.
 
 Use **Import form responses** in the directory to load a CSV downloaded from Google Sheets or Airtable. The importer parses the questionnaire answers in the browser and stores the imported records there. To clear the browser copy, use **Remove imported records**. The site has no server or shared database. Keep raw form exports and private response data out of the public repository.
+
+## Shared-password directory
+
+GitHub Pages serves the public roster. Deploy `server.mjs` to a Node host behind HTTPS to serve the complete directory. The host should rate-limit sign-in attempts at its HTTPS proxy. This server listens on loopback by default. Set `HOST` if your hosting platform requires a different bind address.
+
+- Set `OT_DIRECTORY_PASSWORD` in the hosting provider's secrets.
+- Mount a private response export outside the public site and set `OT_RESPONSES_FILE` to its path. The server accepts a JSON array or the existing generated `window.formResponses` snapshot.
+- Run `node scripts/build-public-careers.mjs` and start with `node server.mjs`.
+- Enter any username and the shared chapter password when prompted. Rotate the password in the host's secrets and restart the server to revoke the previous password.
+
+The password gate covers the directory HTML, scripts, and the detailed response endpoint. Keep the private export out of GitHub and GitHub Pages artifacts.
+
