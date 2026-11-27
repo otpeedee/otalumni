@@ -7,7 +7,7 @@ const dimensions = ["field", "company", "year"];
 const normalize = value => String(value ?? "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 const identity = row => normalize(row.name) + "|" + (row.year || "");
 const labels = {field: "fields", company: "companies", year: "class years"};
-const chapterHeadshots = window.chapterHeadshots || {};
+let chapterHeadshots = {};
 const profileSections = [
   ["Current work", {currentWork:"Role and company", responsibilities:"What their work entails"}],
   ["Previous experience", {experience:"Roles and responsibilities"}],
@@ -305,5 +305,38 @@ byId("remove").addEventListener("click", () => {
   refresh();
   byId("import-status").textContent = "Imported responses removed from this browser.";
 });
-refresh();
+byId("unlock-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const button = event.submitter;
+  const status = byId("unlock-status");
+  const input = byId("password");
+  button.disabled = true;
+  status.textContent = "Unlocking directory…";
+  try {
+    const response = await fetch("https://ot-alumni-directory-api.tweedyode3.chatgpt.site/pages-alumni", {
+      method: "POST",
+      body: new URLSearchParams({password:input.value})
+    });
+    if (response.status === 401) {
+      status.textContent = "Incorrect password. Try again.";
+      input.select();
+      return;
+    }
+    if (!response.ok) throw Error("Directory unavailable.");
+    const data = await response.json();
+    window.chapterRoster = data.chapterRoster;
+    window.publicCareers = data.publicCareers;
+    window.formResponses = data.formResponses;
+    chapterHeadshots = data.chapterHeadshots;
+    input.value = "";
+    refresh();
+    byId("unlock").hidden = true;
+    byId("directory").hidden = false;
+    byId("search").focus();
+  } catch {
+    status.textContent = "The directory couldn’t load. Please try again.";
+  } finally {
+    button.disabled = false;
+  }
+});
 
