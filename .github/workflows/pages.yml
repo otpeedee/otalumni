@@ -24,7 +24,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node scripts/build-public-careers.mjs
       - run: node --check docs/directory.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
