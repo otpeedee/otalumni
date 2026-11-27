@@ -9,6 +9,7 @@ const identity = row => normalize(row.name) + "|" + (row.year || "");
 const labels = {field: "fields", company: "companies", year: "class years"};
 let chapterHeadshots = {};
 const profileSections = [
+  ["Contact", {email:"Email", phone:"Phone"}],
   ["Current work", {currentWork:"Role and company", responsibilities:"What their work entails"}],
   ["Previous experience", {experience:"Roles and responsibilities"}],
   ["Education and chapter", {major:"Major", graduation:"Graduation year", pledgeClass:"Pledge class", location:"Location"}],
@@ -90,6 +91,28 @@ function linkedIn(person) {
   return link("Search on LinkedIn", url.href);
 }
 
+function profileAnswer(field, answer) {
+  const details = element("dd");
+  if (field !== "email" && field !== "phone") {
+    details.textContent = answer;
+    return details;
+  }
+  for (const value of answer.split("\n")) {
+    const item = element("div", value);
+    const phone = value.replace(/[^\d+]/g, "");
+    const href = field === "email" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+      ? "mailto:" + encodeURIComponent(value).replace(/%40/g, "@")
+      : field === "phone" && /^\+?\d{7,15}$/.test(phone) ? "tel:" + phone : "";
+    if (href) {
+      const anchor = element("a", value);
+      anchor.href = href;
+      item.replaceChildren(anchor);
+    }
+    details.append(item);
+  }
+  return details;
+}
+
 function avatar(person) {
   const container = element("span", "", "avatar");
   container.setAttribute("aria-hidden", "true");
@@ -121,7 +144,7 @@ function openProfile(person) {
     for (const [key, label] of Object.entries(fields)) {
       const answers = person.answers?.[key];
       if (!answers?.length) continue;
-      list.append(element("dt", label), ...answers.map(answer => element("dd", answer)));
+      list.append(element("dt", label), ...answers.map(answer => profileAnswer(key, answer)));
     }
     if (!list.childElementCount) continue;
     const section = element("section");
