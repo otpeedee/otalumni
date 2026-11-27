@@ -39,8 +39,6 @@ button:hover{background:#eaf1f8}
 .card small{color:var(--muted)}
 .card a{display:inline-block;margin:10px 14px 0 0;font-size:.875rem}
 h2{font:normal 1.7rem Georgia,serif;margin:24px 0 12px}
-.import{margin-top:30px;padding:14px 0;border-top:1px solid var(--line)}
-summary{cursor:pointer;font-weight:650}
 .profile-button{display:block;margin-top:12px;color:var(--navy);font-weight:650}
 #profile{width:min(680px,calc(100% - 28px));max-height:86vh;border:1px solid var(--line);border-radius:14px;padding:clamp(18px,4vw,32px);color:var(--ink)}
 #profile::backdrop{background:#0e233bc7}
