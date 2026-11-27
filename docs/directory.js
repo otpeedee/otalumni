@@ -7,6 +7,7 @@ const dimensions = ["field", "company", "year"];
 const normalize = value => String(value ?? "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 const identity = row => normalize(row.name) + "|" + (row.year || "");
 const labels = {field: "fields", company: "companies", year: "class years"};
+const chapterHeadshots = window.chapterHeadshots || {};
 const profileSections = [
   ["Current work", {currentWork:"Role and company", responsibilities:"What their work entails"}],
   ["Previous experience", {experience:"Roles and responsibilities"}],
@@ -39,7 +40,9 @@ try {
 let alumni = [];
 
 function merge() {
-  const people = new Map(window.chapterRoster.map(row => [identity(row), {...row, roster: true}]));
+  const people = new Map(window.chapterRoster.map(row => [identity(row), {
+    ...row, roster: true, headshot: chapterHeadshots[row.name]
+  }]));
   for (const career of window.publicCareers) {
     const person = people.get(identity(career));
     if (!person) continue;
@@ -87,9 +90,28 @@ function linkedIn(person) {
   return link("Search on LinkedIn", url.href);
 }
 
+function avatar(person) {
+  const container = element("span", "", "avatar");
+  container.setAttribute("aria-hidden", "true");
+  const initials = element("span", person.name.split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase(), "initials");
+  container.append(initials);
+  const photo = person.headshot;
+  if (photo) {
+    const image = element("img", "", "headshot");
+    image.alt = "";
+    image.loading = "lazy";
+    image.referrerPolicy = "no-referrer";
+    image.addEventListener("error", () => image.remove(), {once:true});
+    image.src = photo;
+    container.append(image);
+  }
+  return container;
+}
+
 function openProfile(person) {
   const dialog = byId("profile");
   byId("profile-name").textContent = person.name;
+  byId("profile-avatar")?.replaceChildren(avatar(person));
   byId("profile-summary").textContent = [person.year && "Class of " + person.year, person.role, person.company].filter(Boolean).join(" · ");
   byId("profile-links").replaceChildren(linkedIn(person));
   const content = byId("profile-content");
@@ -97,7 +119,7 @@ function openProfile(person) {
   for (const [title, fields] of profileSections) {
     const list = element("dl");
     for (const [key, label] of Object.entries(fields)) {
-      const answers = person.answers[key];
+      const answers = person.answers?.[key];
       if (!answers?.length) continue;
       list.append(element("dt", label), ...answers.map(answer => element("dd", answer)));
     }
@@ -112,17 +134,15 @@ function openProfile(person) {
 function card(person) {
   const item = element("article", "", "card");
   const head = element("div", "", "card-head");
-  const initials = element("span", person.name.split(/\s+/).slice(0,2).map(part => part[0]).join("").toUpperCase(), "initials");
-  initials.setAttribute("aria-hidden", "true");
   const name = element("div");
   name.append(element("h3", person.name));
   if (person.year) name.append(element("small", "Class of " + person.year));
-  head.append(initials, name);
+  head.append(avatar(person), name);
   item.append(head, element("p", [person.role,person.company,person.field].filter(Boolean).join(" · ") || "Career details unavailable"));
   if (person.roster) item.append(link("Chapter roster", rosterUrl));
   if (person.url) item.append(link("Career source", person.url));
   item.append(linkedIn(person));
-  if (person.answers) {
+  if (person.answers || person.headshot) {
     const button = element("button", "View profile", "profile-button");
     button.type = "button";
     button.setAttribute("aria-label", "View profile for " + person.name);
