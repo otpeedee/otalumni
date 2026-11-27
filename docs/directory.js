@@ -2,7 +2,6 @@
 
 const byId = id => document.getElementById(id);
 const rosterUrl = "https://www.upennthetatau.com/alumni";
-const storageKey = "penn-ot-form-responses";
 const dimensions = ["field", "company", "year"];
 const normalize = value => String(value ?? "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 const identity = row => normalize(row.name) + "|" + (row.year || "");
@@ -17,27 +16,6 @@ const profileSections = [
   ["Connecting with this alum", {willingToSpeak:"Willing to speak with brothers", referrals:"Referrals", mockInterviews:"Mock interviews"}],
   ["Additional notes", {notes:"From the alum"}]
 ];
-const aliases = {
-  name: ["full name", "alumni name", "name", "name first last", "first and last name"],
-  year: ["class year", "graduation year", "year graduated", "graduating class", "class of", "year"],
-  company: ["current employer", "current company", "company organization", "company", "employer", "organization"],
-  field: ["industry", "career field", "field", "professional field", "sector"],
-  role: ["job title", "current role", "position", "role", "title"],
-  profile: ["linkedin url", "linkedin link", "linkedin profile", "linkedin"]
-};
-const answerColumns = {
-  major: "major", pledgeClass: "pledge class", graduation: "graduation year", location: "current location",
-  currentWork: "current role and company", responsibilities: "please describe what your current role entails",
-  experience: "please list your previous work experiences", willingToSpeak: "are you willing to speak",
-  referrals: "can you refer brothers", notes: "anything else you would like to add",
-  graduateSchool: "name of graduate school", degree: "degree type", mockInterviews: "are you willing to mock interview"
-};
-
-let imported = [];
-try {
-  const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
-  if (Array.isArray(saved)) imported = saved;
-} catch {}
 let alumni = [];
 
 function merge() {
@@ -51,7 +29,7 @@ function merge() {
       if (!person[key] && career[key]) person[key] = career[key];
     }
   }
-  for (const row of [...window.formResponses, ...imported]) {
+  for (const row of window.formResponses) {
     const matches = [...people.entries()].filter(([, person]) => normalize(person.name) === normalize(row.name));
     const compatible = matches.filter(([, person]) => !row.year || !person.year || person.year === row.year);
     const key = people.has(identity(row)) ? identity(row) : compatible.length === 1 ? compatible[0][0] : identity(row);
@@ -224,75 +202,6 @@ function render() {
   }
 }
 
-function parseCsv(text) {
-  const rows = [];
-  let row = [], cell = "", quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    if (char === '"') {
-      if (quoted && text[i + 1] === '"') { cell += '"'; i++; }
-      else quoted = !quoted;
-    } else if (!quoted && char === ",") {
-      row.push(cell.trim());
-      cell = "";
-    } else if (!quoted && (char === "\r" || char === "\n")) {
-      if (char === "\r" && text[i + 1] === "\n") i++;
-      rows.push([...row, cell.trim()]);
-      row = [];
-      cell = "";
-    } else {
-      cell += char;
-    }
-  }
-  if (quoted) throw new Error("A quoted CSV value is unfinished.");
-  rows.push([...row, cell.trim()]);
-  return rows.filter(values => values.some(Boolean));
-}
-
-function readImport(text) {
-  const [header=[], ...rows] = parseCsv(text);
-  const headers = header.map(normalize);
-  const columns = Object.fromEntries(Object.entries(aliases).map(([key,names]) => [key,names.map(name => headers.indexOf(name)).find(index => index >= 0) ?? -1]));
-  const first = headers.indexOf("first name");
-  const last = headers.indexOf("last name");
-  const answerIndexes = Object.fromEntries(Object.entries(answerColumns).map(([key, prefix]) =>
-    [key, headers.findIndex(header => header === prefix || header.startsWith(prefix + " "))]));
-  const graduateStart = answerIndexes.graduateSchool;
-  if (graduateStart >= 0) {
-    answerIndexes.graduateYear = headers.indexOf("graduation year", graduateStart + 1);
-    answerIndexes.graduateMajor = headers.indexOf("major", graduateStart + 1);
-    answerIndexes.graduateNotes = headers.indexOf("anything else you would like to add", graduateStart + 1);
-  }
-  if (columns.name < 0 && (first < 0 || last < 0)) throw new Error("The CSV needs a Name column or First Name and Last Name columns.");
-  return rows.flatMap(row => {
-    const name = row[columns.name] || [row[first],row[last]].filter(Boolean).join(" ");
-    if (!name) return [];
-    const record = {name,form:true};
-    const year = row[columns.year]?.match(/\b(?:19|20)\d{2}\b/);
-    if (year) record.year = Number(year[0]);
-    for (const key of ["field","company","role"]) {
-      if (row[columns[key]]) record[key] = row[columns[key]];
-    }
-    const answers = Object.fromEntries(Object.entries(answerIndexes).filter(([, index]) => row[index]).map(([key, index]) => [key, row[index]]));
-    if (Object.keys(answers).length) record.answers = answers;
-    if (answers.currentWork && !record.role && !record.company) {
-      const [role, company] = answers.currentWork.split(/\s+(?:at|@)\s+|,\s+/i);
-      if (company && !/^\d{4}/.test(company)) {
-        record.role = role;
-        record.company = company.replace(/\s+\d{4}\s*[-–].*$/, "").trim();
-      }
-    }
-    const profile = row[columns.profile];
-    if (profile) {
-      try {
-        const url = new URL(/^https?:\/\//i.test(profile) ? profile : "https://" + profile);
-        if (/(^|\.)linkedin\.com$/i.test(url.hostname) && /^\/in\/[^/]+/.test(url.pathname)) record.profile = "https://www.linkedin.com" + url.pathname;
-      } catch {}
-    }
-    return [record];
-  });
-}
-
 function refresh() {
   merge();
   updateOptions();
@@ -305,28 +214,6 @@ byId("reset").addEventListener("click", () => {
   byId("filters").reset();
   dimensions.forEach(key => { byId(key).value = ""; });
   render();
-});
-byId("csv").addEventListener("change", async event => {
-  const file = event.target.files[0];
-  if (!file) return;
-  try {
-    const records = readImport(await file.text());
-    if (!records.length) throw new Error("The CSV contains no named alumni.");
-    localStorage.setItem(storageKey,JSON.stringify(records));
-    imported = records;
-    refresh();
-    byId("import-status").textContent = "Imported " + records.length + " form responses.";
-  } catch (error) {
-    byId("import-status").textContent = error.message;
-  } finally {
-    event.target.value = "";
-  }
-});
-byId("remove").addEventListener("click", () => {
-  localStorage.removeItem(storageKey);
-  imported = [];
-  refresh();
-  byId("import-status").textContent = "Imported responses removed from this browser.";
 });
 byId("unlock-form").addEventListener("submit", async event => {
   event.preventDefault();
