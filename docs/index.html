@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Explore the University of Pennsylvania Theta Tau alumni network by field, company, and graduating class.">
 <title>Alumni Directory | Penn Theta Tau</title>
-<link rel="stylesheet" href="style.css?v=chapter-password">
-<script defer src="directory.js?v=profile-contacts"></script>
+<link rel="stylesheet" href="style.css?v=directory-only">
+<script defer src="directory.js?v=directory-only"></script>
 </head>
 <body>
 <header><div class="wrap mast"><a class="brand" href="./"><span class="mark" aria-hidden="true">ΘΤ</span><span>Penn Theta Tau<small>UNIVERSITY OF PENNSYLVANIA</small></span></a><a href="https://www.upennthetatau.com/alumni">Chapter roster</a></div></header>
@@ -29,7 +29,6 @@
 </form>
 <div class="toolbar"><p id="count" role="status"></p><div><label for="group">Group by</label> <select id="group"><option value="">None</option><option value="field">Field</option><option value="company">Company</option><option value="year">Class year</option></select></div><button type="button" id="reset">Clear filters</button></div>
 <div id="results"></div>
-<details class="import"><summary>Import form responses</summary><p>Import a Google Sheets or Airtable CSV export to add alumni and career details. The imported records stay in this browser. A new import replaces the previous one.</p><label for="csv">Form responses CSV</label> <input id="csv" type="file" accept=".csv,text/csv"><button type="button" id="remove">Remove imported records</button><p id="import-status" role="status"></p></details>
 </section>
 </main>
 <dialog id="profile" aria-labelledby="profile-name">
