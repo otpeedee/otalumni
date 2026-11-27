@@ -5,18 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Explore the University of Pennsylvania Theta Tau alumni network by field, company, and graduating class.">
 <title>Alumni Directory | Penn Theta Tau</title>
-<link rel="stylesheet" href="style.css">
-<script defer src="roster.js"></script>
-<script defer src="headshots.js"></script>
-<script defer src="public-careers.js"></script>
-<script defer src="responses.js"></script>
-<script defer src="directory.js"></script>
+<link rel="stylesheet" href="style.css?v=chapter-password">
+<script defer src="directory.js?v=chapter-password"></script>
 </head>
 <body>
 <header><div class="wrap mast"><a class="brand" href="./"><span class="mark" aria-hidden="true">ΘΤ</span><span>Penn Theta Tau<small>UNIVERSITY OF PENNSYLVANIA</small></span></a><a href="https://www.upennthetatau.com/alumni">Chapter roster</a></div></header>
 <main>
 <section class="hero"><div class="wrap"><p class="eyebrow">THE PENN THETA TAU NETWORK</p><h1>Alumni directory</h1><p>Find alumni by what they do, where they work, or when they graduated.</p></div></section>
-<section class="wrap directory" aria-label="Search the alumni directory">
+<section class="wrap unlock" id="unlock">
+<form id="unlock-form">
+<label for="password">Chapter password</label>
+<input id="password" name="password" type="password" autocomplete="current-password" required>
+<button type="submit">Unlock directory</button>
+<p id="unlock-status" role="status"></p>
+</form>
+</section>
+<section class="wrap directory" id="directory" aria-label="Search the alumni directory" hidden>
 <form id="filters" class="filters">
 <label class="search">Search<input id="search" type="search" placeholder="Name, company, or experience"></label>
 <label>Field<select id="field"></select></label>
