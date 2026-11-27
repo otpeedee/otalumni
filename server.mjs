@@ -4,8 +4,8 @@ import { createServer } from "node:http";
 import { resolve } from "node:path";
 
 const password = process.env.OT_DIRECTORY_PASSWORD;
-const responsePath = process.env.OT_RESPONSES_FILE;
-if (!password || !responsePath) throw Error("Set OT_DIRECTORY_PASSWORD and OT_RESPONSES_FILE before starting.");
+const dataPath = process.env.OT_DIRECTORY_DATA_FILE;
+if (!password || !dataPath) throw Error("Set OT_DIRECTORY_PASSWORD and OT_DIRECTORY_DATA_FILE before starting.");
 
 const digest = value => createHash("sha256").update(value).digest();
 const expected = digest(password);
@@ -15,7 +15,7 @@ const publicFiles = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
   ["/index.html", ["index.html", "text/html; charset=utf-8"]],
   ["/style.css", ["style.css", "text/css; charset=utf-8"]],
-  ...["directory.js", "roster.js", "headshots.js", "public-careers.js"].map(file => ["/" + file, [file, javascript]])
+  ["/directory.js", ["directory.js", javascript]]
 ]);
 
 const files = new Map();
@@ -23,12 +23,21 @@ for (const [route, [file, type]] of publicFiles) {
   files.set(route, {type, body:await readFile(new URL(file, directory))});
 }
 
-// Accept the existing generated snapshot or a plain JSON array. Re-serialize it
-// as data so an export cannot inject code through the private script endpoint.
-const snapshot = (await readFile(resolve(responsePath), "utf8")).trim();
-const records = JSON.parse(snapshot.replace(/^window\.formResponses\s*=\s*/, "").replace(/;\s*$/, ""));
-if (!Array.isArray(records) || !records.length) throw Error("Private response export must contain alumni records.");
-files.set("/responses.js", {type:javascript, body:"window.formResponses = " + JSON.stringify(records) + ";\n"});
+const data = JSON.parse(await readFile(resolve(dataPath), "utf8"));
+if (!Array.isArray(data.chapterRoster) || !data.chapterRoster.length ||
+    !Array.isArray(data.formResponses) || !Array.isArray(data.publicCareers) ||
+    !data.chapterHeadshots || Array.isArray(data.chapterHeadshots) || typeof data.chapterHeadshots !== "object") {
+  throw Error("The directory data bundle is missing a roster, headshots, or career records.");
+}
+const dataRoutes = {
+  "/roster.js": "chapterRoster",
+  "/headshots.js": "chapterHeadshots",
+  "/public-careers.js": "publicCareers",
+  "/responses.js": "formResponses"
+};
+for (const [route, key] of Object.entries(dataRoutes)) {
+  files.set(route, {type:javascript, body:"window." + key + " = " + JSON.stringify(data[key]) + ";\n"});
+}
 
 function authorized(header = "") {
   const encoded = header.match(/^Basic\s+([\w+/]+={0,2})$/i)?.[1];
