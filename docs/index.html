@@ -7,6 +7,7 @@
 <title>Alumni Directory | Penn Theta Tau</title>
 <link rel="stylesheet" href="style.css">
 <script defer src="roster.js"></script>
+<script defer src="headshots.js"></script>
 <script defer src="public-careers.js"></script>
 <script defer src="responses.js"></script>
 <script defer src="directory.js"></script>
@@ -29,8 +30,10 @@
 </main>
 <dialog id="profile" aria-labelledby="profile-name">
 <form method="dialog" class="profile-close"><button>Close</button></form>
-<h2 id="profile-name"></h2>
-<p id="profile-summary"></p>
+<div class="card-head">
+<div id="profile-avatar"></div>
+<div><h2 id="profile-name"></h2><p id="profile-summary"></p></div>
+</div>
 <div id="profile-links"></div>
 <div id="profile-content"></div>
 </dialog>
